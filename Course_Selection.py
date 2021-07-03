@@ -60,7 +60,7 @@ class CS:
         #合并参数
         params.update(params1)
         self.params = params
-        self.sesssion = session
+        self.session = session
         self.status=0
     #todo conditon 条件筛选
     def GetCourses(self, condition=None):
