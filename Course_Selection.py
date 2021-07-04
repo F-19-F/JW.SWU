@@ -187,7 +187,12 @@ class CS:
         elif res['flag'] == '0':
             print(res['msg'])
         return False
-
+def CheckName(name:str):
+    for i in TARGETS:
+        if i in name:
+            return True
+        else:
+            return False
 
 if __name__ == '__main__':
     needloop = True
@@ -200,7 +205,7 @@ if __name__ == '__main__':
     while needloop:
         courses = XK.GetCourses()
         for c in courses:
-            if c['kcmc'] in TARGETS:
+            if CheckName(c['kcmc']):
                 if XK.SelectCourse(c):
                     TARGETS.remove(c['kcmc'])
                     if len(TARGETS) == 0:
