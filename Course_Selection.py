@@ -27,20 +27,21 @@ headers = {
 
 class CS:
     #session 登录教务系统的会话
-    def __init__(self, session):
+    def __init__(self, session,num):
+        self.num=num
         Init_headers = headers
         Init_headers['X-Requested-With'] = 'XMLHttpRequest'
         Init_headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
         #发送进入选课界面的请求
         session.post(url='http://{}/jwglxt/xtgl/index_cxBczjsygnmk.html?gnmkdm=index&su={}'.format(
-            HOST, USERNAME), headers=Init_headers, data={'gndm': 'N253512'})
+            HOST, self.num), headers=Init_headers, data={'gndm': 'N253512'})
         res = session.get(
-            url='http://{}/jwglxt/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su={}'.format(HOST, USERNAME), headers=headers)
+            url='http://{}/jwglxt/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su={}'.format(HOST, self.num), headers=headers)
         #判断是否在选课时段
         status = re.findall(
             '<div class="nodata"><span>(.*?)</span></div>', res.text)
         if len(status) > 0:
-            print(status[0])
+            #print(status[0])
             self.status = -1
             return
         #分析参数
@@ -53,7 +54,7 @@ class CS:
             'jspage': '0'
         }
         res = session.post(url='http://{}/jwglxt/xsxk/zzxkyzb_cxZzxkYzbDisplay.html?gnmkdm=N253512&su={}'.format(
-            HOST, USERNAME), headers=Init_headers, data=first_postdata)
+            HOST, self.num), headers=Init_headers, data=first_postdata)
         #寻找后续需要的参数
         params1 = dict(re.findall(
             '<input type="hidden" name="(.*?)" id=".*?" value="(.*?)"/>', res.text))
@@ -69,7 +70,7 @@ class CS:
         post_headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
         post_headers['Origin'] = HOST
         post_headers['Referer'] = 'http://{}/jwglxt/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su={}'.format(
-            HOST, USERNAME)
+            HOST, self.num)
         post_params = {}
         #基本参数
         post_params.update({
@@ -103,15 +104,27 @@ class CS:
             'kklxdm': self.params['firstKklxdm'],
             'rlkz': self.params['rlkz'],
             'xkzgbj': self.params['xkzgbj'],
-            'kspage': '1',  # 默认值
-            'jspage': '10',  # 默认值
+            'kspage': 1,  # 默认值，后面会自主更新
+            'jspage': 10,  # 默认值，后面会自主更新
             'jxbzb': self.params['jxbzb']
         })
         url = 'http://{}/jwglxt/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html?gnmkdm=N253512&su={}'.format(
-            HOST, USERNAME)
+            HOST, self.num)
         res = self.session.post(
             url=url, headers=post_headers, data=post_params)
-        return res.json()['tmpList']
+        jsonret=res.json()['tmpList']
+        sum=[]
+        sum+=jsonret
+        #判断是否存在更多课程
+        if len(jsonret) == 0:
+            return []
+        while int(jsonret[-1]['kcrow'])-int(jsonret[0]['kcrow'])+1 >= 10:
+            post_params['kspage']=post_params['kspage']+10
+            post_params['jspage']=post_params['jspage']+10
+            res = self.session.post(url=url, headers=post_headers, data=post_params)
+            jsonret=res.json()['tmpList']
+            sum+=jsonret
+        return sum
     #course_info 要选的课程信息，是GetCourses返回列表的子集
     def SelectCourse(self, course_info):
         post_headers = headers
@@ -119,7 +132,7 @@ class CS:
         post_headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
         post_headers['Origin'] = HOST
         post_headers['Referer'] = 'http://{}/jwglxt/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su={}'.format(
-            HOST, USERNAME)
+            HOST, self.num)
         post_params = {
             'rwlx': self.params['rwlx'],
             'xkly': self.params['xkly'],
@@ -154,7 +167,7 @@ class CS:
         post_params['cxbj'] = course_info['cxbj']
         post_params['fxbj'] = course_info['fxbj']
         res = self.session.post(url='http://{}/jwglxt/xsxk/zzxkyzbjk_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512&su={}'.format(
-            HOST, USERNAME), data=post_params, headers=post_headers)
+            HOST, self.num), data=post_params, headers=post_headers)
         target = res.json()[0]
         #准备参数，进行最终选课请求的发送
         post_params = {
@@ -177,7 +190,7 @@ class CS:
             'xkxqm': self.params['xkxqm'],
         }
         res = self.session.post(url='http://{}/jwglxt/xsxk/zzxkyzbjk_xkBcZyZzxkYzb.html?gnmkdm=N253512&su={}'.format(
-            HOST, USERNAME), data=post_params, headers=post_headers)
+            HOST, self.num), data=post_params, headers=post_headers)
         res = res.json()
         if res['flag'] == '1':
             print("选课成功!!!")
@@ -196,10 +209,10 @@ def CheckName(name:str):
 
 if __name__ == '__main__':
     needloop = True
-    s = Login(USERNAME, PASSWORD)
+    s,num = Login(USERNAME, PASSWORD)
     if not s:
         exit(-1)
-    XK=CS(s)
+    XK=CS(s,num)
     if XK.status < 0:
         exit(-1)
     while needloop:

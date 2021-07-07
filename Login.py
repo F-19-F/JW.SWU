@@ -16,7 +16,7 @@ def Login(username, password):
         "Accept-Encoding": "gzip,deflate",
         "Accept-Language": "zh-CN,zh;q=0.9"
     }
-    res = session.get(url='http://i.swu.edu.cn', headers=Normal_headers)
+    res = session.get(url='http://i.swu.edu.cn', headers=Normal_headers,timeout=2)
     #Find login params
     lt = re.findall(
         '<input type="hidden" name="lt" value="(.*?)"/>', res.text)[0]
@@ -52,14 +52,15 @@ def Login(username, password):
     res = session.post(url='https://uaaap.swu.edu.cn/cas/login;36501JSESSIONID={}?service=http%3A%2F%2Fi.swu.edu.cn%2FPersonalApplications%2FviewPageV3'.format(session.cookies.get('36501JSESSIONID')),
                        data=Params,
                        headers=Post_Headers,
-                       allow_redirects=False
+                       allow_redirects=False,
+                       timeout=2
                        )
     if 'Location' in res.headers:
         #success
         print("登录成功!")
     else:
         print("登录失败")
-        return None
+        return (None,None)
     #forwarding to jw.swu.edu.cn
     jw_headers = {
         "Host": "uaaap.swu.edu.cn",
@@ -78,12 +79,13 @@ def Login(username, password):
         "Accept-Language": "zh-CN,zh;q=0.9"
     }
     res = session.get(
-        url='https://uaaap.swu.edu.cn/cas/login?service=http%3A%2F%2Fjw.swu.edu.cn%2Fsso%2Fzllogin', headers=jw_headers)
+        url='https://uaaap.swu.edu.cn/cas/login?service=http%3A%2F%2Fjw.swu.edu.cn%2Fsso%2Fzllogin', headers=jw_headers,timeout=5)
     #get jw.swu.edu.cn's cookies
+    num=re.findall('uid=(.*?)&',res.history[3].url)[0]#get snum
     cookies = res.history[3].cookies.get_dict()
     session.cookies = requests.utils.cookiejar_from_dict(
         cookies, cookiejar=None, overwrite=True)
-    return session
+    return session,num
 
 
 def GetInfo(session, username):
@@ -108,6 +110,6 @@ if __name__ == '__main__':
     print("一站式网上办事大厅-->教务系统")
     username = input("学号:")
     password = getpass.getpass("密码:")
-    session = Login(username, password)
+    session,num = Login(username, password)
     if session:
         GetInfo(session, username)
