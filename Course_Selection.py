@@ -222,6 +222,8 @@ class CS:
             res=res.json()
             if len(res)>1:
                 t=res[1]
+            else:
+                t=res[0]
             do_jxb_id+='%2C'
             do_jxb_id+=t['do_jxb_id']
         #准备参数，进行最终选课请求的发送
