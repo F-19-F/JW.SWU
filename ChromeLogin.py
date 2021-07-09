@@ -11,6 +11,8 @@ if __name__=='__main__':
     while not session:
         try:
             session,num = Login(username, password)
+            if not session:
+                break
         except:
             pass
     if session:
@@ -24,6 +26,8 @@ if __name__=='__main__':
                 'domain':'jw.swu.edu.cn'
             }
             scookies.append(one)
+    else:
+        exit(-1)
     driver=selenium.webdriver.Chrome(ChromeDriverManager().install())
     driver.get("http://jw.swu.edu.cn")
     driver.delete_all_cookies()
